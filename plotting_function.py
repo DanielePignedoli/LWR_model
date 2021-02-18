@@ -8,8 +8,18 @@ import matplotlib.pylab as plt
 import __main__
 
 #makink new directory with main file name
-directory = os.path.basename(__main__.__file__)[:-3] + '_plots'
-os.makedirs(directory)
+directory = os.path.basename(__main__.__file__)[:-3] + '_plots1'
+
+while True:
+    
+    try:
+        os.makedirs(directory)
+        break
+    except FileExistsError:
+        directory = directory[:-1]+str(int(directory[-1])+1)
+        
+#little trick to avoid error with directory with sam name. but after 19 it could generate 110 i think
+    
 os.makedirs(directory +'/plots')
 
 def plot_data_to_gif(data, ylim : list):
