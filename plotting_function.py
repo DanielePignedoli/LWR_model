@@ -40,6 +40,7 @@ def plot_data_to_cmap(data):
     im = ax.pcolormesh(data, cmap = cmap)
     fig.colorbar(im)
     ax.set_xlabel('cells')
+    plt.xticks(range(len(data[0])),range(1,len(data[0])+1))
     ax.set_ylabel('time_step')
     fig.tight_layout()
     fig.savefig(directory+'/density_cmap.png')

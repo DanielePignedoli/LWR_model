@@ -21,6 +21,9 @@ class MakeCell:
     supply : float = None
     demand : float = None
     
+    max_flow : float = None
+    capacity : float = None
+    
     def update_capacity(self):
         #max flow per lane
         self.max_flow = self.density_max*self.free_v*self.cong_v/(self.cong_v-self.free_v)
