@@ -1,20 +1,48 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
-class MakeCell:
+class MakeRoad:
+    
+
+    
+    #road params
+    free_v : float  #km all'ora
+    cong_v : float  #km all'ora
+    road_lenght : float  #km
+    density_max : float   #veicoli per kilometro (lane average)
+  
+    
+    #parameters to initialise
+    iteration : int = field(init=False)
+    cell_lenght : float = field(init=False)
+    n_cells : int = field(init=False)
+    
+    #method parameter
+    dt : float = field(default=1/600) #hr
+    simulation_time : float = field(default=1/6) #hr, so 10 min
+    
+    def __post_init__(self):
+        self.iteration = round(self.simulation_time/self.dt)
+        self.cell_lenght = self.cong_v * self.dt
+        self.n_cells = round(self.road_lenght/self.cell_lenght)
+
+
+
+@dataclass
+class MakeCell(MakeRoad):
     
     #model parameters
     
-    density_max : float #max_density per lane
-    free_v : float
-    cong_v : float
+    #density_max : float #max_density per lane
+    #free_v : float
+    #cong_v : float
     
     #cell variables
-    
-    density : float
-    num_lanes : float
+    num_lanes : float  #num of lanes
+    density : float = None
+    #num_lanes : float
     flow : float = None
     
     
@@ -52,4 +80,10 @@ class MakeCell:
         elif p_avg > self.density_max:
             self.flow = 0
         else:
-            self.flow = (self.max_flow*(1-self.cong_v/self.free_v) + self.cong_v*p_avg)*self.num_lanes   
+            self.flow = (self.max_flow*(1-self.cong_v/self.free_v) + self.cong_v*p_avg)*self.num_lanes
+            
+    def updates(self):
+        self.update_capacity()
+        self.flow_equilibrium()
+        self.update_supply()
+        self.update_demand()
