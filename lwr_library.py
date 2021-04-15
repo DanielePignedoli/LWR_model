@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
 import numpy as np
+import matplotlib.pyplot as plt
 
 @dataclass
 class MakeRoad():
@@ -37,30 +38,28 @@ class MakeRoad():
     def homogeneous(self, source=0, sink=0):
         
         self.cell = []
-        if source:
-            self.cell.append(MakeCell(self, source = source))
+        self.cell.append(MakeCell(self, source = source))
         for i in range(self.n_cells):
             self.cell.append(MakeCell(self))
-        if sink:
-            self.cell.append(MakeCell(self, sink=sink))
+        self.cell.append(MakeCell(self, sink=sink))
     
-    def method(self):
-        self.data = np.array([c.density for c in self.cell[1:-1]])
-        
-        for i in range(self.iteration):
-            self.data = np.vstack((self.data,np.array([c.density for c in self.cell[1:-1]])))
-            
-            for c in self.cell[1:-1]:
-                c.updates()
-            
-            demands = [c.demand for c in self.cell[:-1]]
-            supplies = [c.supply for c in self.cell[1:]]
-            
-            flows = np.minimum(demands, supplies)
-            for num, c in enumerate(self.cell[1:-1]):
-                c.density = c.density +(flows[num] - flows[num+1])*self.dt/self.cell_lenght
+    
+    def update_density(self):
 
-            
+        for c in self.cell[1:-1]:
+            c.update_capacity()
+            c.flow_equilibrium()
+            c.update_supply()
+            c.update_demand()
+        
+        demands = [c.demand for c in self.cell[:-1]]
+        supplies = [c.supply for c in self.cell[1:]]
+        
+        flows = np.minimum(demands, supplies)
+        for num, c in enumerate(self.cell[1:-1]):
+            c.density = c.density +(flows[num] - flows[num+1])*self.dt/self.cell_lenght
+
+        return np.array([c.density for c in self.cell[1:-1]])
         
 
 
@@ -73,26 +72,24 @@ class MakeCell():
     #cell variables
     density : float = field(default=0)
     flow : float = None
-    
+    bn_reduction : float = field(default = 0)
     
     supply : float = field(init=False)
     demand : float = field(init=False)
-    
-    #max_flow : float = None
     capacity : float = field(init=False)
     
     #source&sink
     source : float = field(default = 0)  # fraction of capacity
-    sink : float = field(default = 0)  # fraction of capacity
+    sink : float = field(default = 1)  # fraction of capacity
     
     def __post_init__(self):
-        if self.source:
-            self.make_source()
-        if self.sink:
-            self.make_sink()
+        self.num_lanes = self.road.num_lanes
+        self.make_source()
+        self.make_sink()
+        
         
     def update_capacity(self):
-        self.capacity = self.road.max_flow*self.road.num_lanes
+        self.capacity = self.road.max_flow*self.num_lanes*(1-self.bn_reduction)
 
     def update_supply(self):
         if self.p_avg >= self.road.p_c:
@@ -109,23 +106,18 @@ class MakeCell():
     
     def flow_equilibrium(self):
         #p_avg is the lane averaged density
-        self.p_avg = self.density/self.road.num_lanes
+        self.p_avg = self.density/self.num_lanes
         #return the total flow in the cell 
         if self.p_avg<0:
             self.flow = 0
         elif self.p_avg <= self.road.p_c:
-            self.flow = self.road.free_v*self.p_avg*self.road.num_lanes
+            self.flow = self.road.free_v*self.p_avg*self.num_lanes
         elif self.p_avg > self.road.density_max:
             self.flow = 0
         else:
-            self.flow = (self.road.max_flow*(1-self.road.cong_v/self.road.free_v) + self.road.cong_v*self.p_avg)*self.road.num_lanes
-            
-    def updates(self):
+            self.flow = (self.road.max_flow*(1-self.road.cong_v/self.road.free_v) + self.road.cong_v*self.p_avg)*self.num_lanes
         
-        self.update_capacity()
-        self.flow_equilibrium()
-        self.update_supply()
-        self.update_demand()
+        
         
     def make_source(self):
         self.update_capacity()
@@ -134,6 +126,19 @@ class MakeCell():
     def make_sink(self):
         self.update_capacity()
         self.supply = self.capacity * self.sink
-        
+
+def plot_data(data,save=False):
+    fig, ax = plt.subplots(figsize=(8,5))
+    cmap = plt.get_cmap('summer')
+    im = ax.pcolormesh(data, cmap = cmap)
+    fig.colorbar(im)
+    ax.set_xlabel('cells')
+    plt.xticks(range(len(data[0])),range(1,len(data[0])+1))
+    ax.set_ylabel('time_step')
+    fig.tight_layout()
+    if save:
+        name = str(input('file name: '))
+        fig.savefig(name+'.png')
+    fig.show()
 
 
