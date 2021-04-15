@@ -1,59 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from lwr_library import MakeRoad, plot_data
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import numpy as np
-from makecell import MakeCell
-import plotting_function
+road = MakeRoad(free_v = 50, cong_v = -30, road_lenght = 2 , density_max = 160,  num_lanes = 3)
+road.homogeneous(0.8,1)
 
-dt = 1/600 #hr
-v = 50  #km all'ora
-c = -30  #km all'ora
-road_lenght = 1.25 #km
-p_max  = 160   #veicoli per kilometro (densità a massima capacità)
-I = 3 #num of lanes
 
-p_init = (0.5*p_max)*I
-
-iteration = 60
-
-cell_lenght = v * dt
-n_cells = round(road_lenght / cell_lenght)
-
-#source cell
-source_demand = p_init*v*I
-cells = [MakeCell(p_max,v,c, p_init, num_lanes = I, demand = source_demand )]
-
-#road cells
-for i in range(n_cells):
-    cells.append(MakeCell(p_max,v,c,p_init, num_lanes = I))
-
-#sink_cell
-cells.append(MakeCell(p_max,v,c, p_init, num_lanes = I, supply = p_max*v*I))
-
-#%%
-data = np.array([cells[k].density for k in range(1,n_cells+1)])
-
-for i in range(iteration):
-    
-    for k in range(1,n_cells+1):
-        cells[k].update_capacity()
-        cells[k].flow_equilibrium()
-        cells[k].update_supply()
-        cells[k].update_demand()
+data = []
+for i in range(road.iteration):
+    data.append(road.update_density())
+    if i in range(20,50):
+        for c in road.cell[8:10]:
+            c.num_lanes = road.num_lanes - 1
+    else:
+        for c in road.cell[8:10]:
+            c.num_lanes = road.num_lanes 
         
-    for k in range(1,n_cells+1):
-        Qup = min(cells[k].supply,cells[k-1].demand)
-        Qdown = min(cells[k+1].supply,cells[k].demand)
-        
-        cells[k].density = cells[k].density +(Qup - Qdown)*dt/cell_lenght
-    
-    data = np.vstack((data,np.array([cells[k].density for k in range(1,n_cells+1)])))
 
-#%%
-
-#plotting data
+plot_data(data)
     
-plotting_function.plot_data_to_gif(data,[0,p_max*I])
-plotting_function.plot_data_to_cmap(data)
