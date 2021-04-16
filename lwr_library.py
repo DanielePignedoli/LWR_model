@@ -11,7 +11,8 @@ class MakeRoad():
     
     #road params
     free_v : float  #km all'ora
-    cong_v : float  #km all'ora
+    cong_v : float = field(init=False)#km all'ora
+    mean_time_gap : float # sec
     road_lenght : float  #km
     density_max : float   #veicoli per kilometro (lane average)
     num_lanes : float = 1 #num of lanes
@@ -28,7 +29,11 @@ class MakeRoad():
     dt : float = field(default=1/600) #hr
     simulation_time : float = field(default=1/6) #hr, so 10 min
     
+    #output[float] = field(default_factory=list)
+    data : list =  field(default_factory = list)
+    
     def __post_init__(self):
+        self.cong_v = -3600/(self.density_max * self.mean_time_gap)
         self.iteration = round(self.simulation_time/self.dt)
         self.cell_lenght = self.free_v * self.dt
         self.n_cells = round(self.road_lenght/self.cell_lenght)
@@ -60,8 +65,23 @@ class MakeRoad():
             c.density = c.density +(flows[num] - flows[num+1])*self.dt/self.cell_lenght
 
         return np.array([c.density for c in self.cell[1:-1]])
-        
-
+    
+    def plot_data(self, save=None,cmap = 'PuBu'):
+        fig, ax = plt.subplots(figsize=(8,5))
+        cmap = plt.get_cmap(cmap)
+        im = ax.pcolormesh(self.data, cmap = cmap)
+        fig.colorbar(im)
+        ax.set_xlabel('position (km)', fontsize = 12)
+        xticks = [round(i*self.cell_lenght,2) for i in range(0,self.n_cells,2)]
+        plt.xticks(range(0,self.n_cells, 2),xticks)
+        yticks = [round(i*self.dt*60) for i in range(0,self.iteration,10)]
+        plt.yticks(range(0,self.iteration,10),yticks)
+        ax.set_ylabel('time (min)', fontsize = 12)
+        fig.tight_layout()
+        if save:
+            fig.savefig(save+'.png')
+        fig.show()
+    
 
 @dataclass
 class MakeCell():
@@ -127,18 +147,6 @@ class MakeCell():
         self.update_capacity()
         self.supply = self.capacity * self.sink
 
-def plot_data(data,save=False):
-    fig, ax = plt.subplots(figsize=(8,5))
-    cmap = plt.get_cmap('summer')
-    im = ax.pcolormesh(data, cmap = cmap)
-    fig.colorbar(im)
-    ax.set_xlabel('cells')
-    plt.xticks(range(len(data[0])),range(1,len(data[0])+1))
-    ax.set_ylabel('time_step')
-    fig.tight_layout()
-    if save:
-        name = str(input('file name: '))
-        fig.savefig(name+'.png')
-    fig.show()
+
 
 
