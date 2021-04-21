@@ -13,14 +13,14 @@ class MakeRoad():
     free_v : float  #km all'ora
     cong_v : float = field(init=False)#km all'ora
     mean_time_gap : float # sec
-    road_lenght : float  #km
+    road_length : float  #km
     density_max : float   #veicoli per kilometro (lane average)
     num_lanes : float = 1 #num of lanes
   
     
     #parameters to initialise
     iteration : int = None
-    cell_lenght : float = None
+    cell_length : float = None
     n_cells : int = None
     max_flow : float = None         #max flow per lane
     p_c : float = None        #crtical density
@@ -35,8 +35,8 @@ class MakeRoad():
     def __post_init__(self):
         self.cong_v = -3600/(self.density_max * self.mean_time_gap)
         self.iteration = round(self.simulation_time/self.dt)
-        self.cell_lenght = self.free_v * self.dt
-        self.n_cells = round(self.road_lenght/self.cell_lenght)
+        self.cell_length = self.free_v * self.dt
+        self.n_cells = round(self.road_length/self.cell_length)
         self.max_flow = self.density_max*self.free_v*self.cong_v/(self.cong_v-self.free_v)
         self.p_c = self.max_flow/self.free_v
         
@@ -62,7 +62,7 @@ class MakeRoad():
         
         flows = np.minimum(demands, supplies)
         for num, c in enumerate(self.cell[1:-1]):
-            c.density = c.density +(flows[num] - flows[num+1])*self.dt/self.cell_lenght
+            c.density = c.density +(flows[num] - flows[num+1])*self.dt/self.cell_length
 
         return np.array([c.density for c in self.cell[1:-1]])
     
@@ -72,9 +72,9 @@ class MakeRoad():
         im = ax.pcolormesh(self.data, cmap = cmap)
         fig.colorbar(im)
         ax.set_xlabel('position (km)', fontsize = 12)
-        xticks = [round(i*self.cell_lenght,2) for i in range(0,self.n_cells,2)]
+        xticks = [round(i*self.cell_length,2) for i in range(0,self.n_cells,2)]
         plt.xticks(range(0,self.n_cells, 2),xticks)
-        yticks = [round(i*self.dt*60) for i in range(0,self.iteration,10)]
+        yticks = [round(i*self.dt*60,1) for i in range(0,self.iteration,10)]
         plt.yticks(range(0,self.iteration,10),yticks)
         ax.set_ylabel('time (min)', fontsize = 12)
         fig.tight_layout()
@@ -112,7 +112,7 @@ class MakeCell():
         self.capacity = self.road.max_flow*self.num_lanes*(1-self.bn_reduction)
 
     def update_supply(self):
-        if self.p_avg >= self.road.p_c:
+        if self.p_avg > self.road.p_c:
             self.supply = self.flow
         else:
             self.supply = self.capacity

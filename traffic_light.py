@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from lwr_library import MakeRoad, plot_data
+from lwr_library import MakeRoad
 
 
 
-road = MakeRoad(free_v = 50, cong_v = -30, road_lenght = 2, 
-                density_max = 160,  num_lanes = 2)
-road.homogeneous(0.6,1)
+road = MakeRoad(free_v = 50, mean_time_gap = 1.2, road_length = 1.4, 
+                density_max = 120)
+road.homogeneous(0.7,1)
 
-data = []
 
 for i in range(road.iteration):
-    if i==20:
+    #road.data.append(road.update_density())
+    if i in [15,50,70]:
         road.cell[11].bn_reduction = 1
-    elif i ==40:
+    elif i in [25,60,80]:
         road.cell[11].bn_reduction = 0
-        
-    data.append(road.update_density())
+    road.data.append(road.update_density())
     
-plot_data(data) 
+road.plot_data() 
 
